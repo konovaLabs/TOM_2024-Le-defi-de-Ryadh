@@ -1,0 +1,17 @@
+## How build with VScode
+
+Download VScode for your target.
+
+Then install Platformio extension.
+
+ ![ Texte alternatif](docs/pio_extension.png "Ajout Pio extension") 
+
+Click on PlatfomIO icon and add your project (repo with platformio.ini)
+
+ ![ Texte alternatif](docs/pio_icon.png "Ajout Pio extension") 
+
+ Your project architecture should be like this:
+
+  ![ Texte alternatif](docs/project.png "Ajout Pio extension") 
+
+  You can now build or upload firmware on the target.
