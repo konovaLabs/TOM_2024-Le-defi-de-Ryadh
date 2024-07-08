@@ -13,11 +13,43 @@ BLECharacteristic *pCSCMeasurement = NULL;
 BLECharacteristic *pCSCFeature = NULL;
 BLECharacteristic *pSensorLocation = NULL;
 BLECharacteristic *pSCControlPoint = NULL;
+bool deviceConnected = false;
+ConnectionCallback connectionCallback = nullptr;
+
+class MyServerCallbacks : public BLEServerCallbacks
+{
+    void onConnect(BLEServer *pServer)
+    {
+        deviceConnected = true;
+        Serial.println("Client connected");
+        if (connectionCallback)
+        {
+            connectionCallback(deviceConnected);
+        }
+    }
+
+    void onDisconnect(BLEServer *pServer)
+    {
+        deviceConnected = false;
+        Serial.println("Client disconnected");
+        if (connectionCallback)
+        {
+            connectionCallback(deviceConnected);
+        }
+        BLEDevice::startAdvertising();
+    }
+};
+
+void ble_register_connection_callback(ConnectionCallback callback)
+{
+    connectionCallback = callback;
+}
 
 void ble_init(void)
 {
     BLEDevice::init("La Roue");
     pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new MyServerCallbacks()); // Set the server callback
 
     /* Create Cycling Speed and Cadence service */
     pCSCService = pServer->createService("1816");
@@ -42,16 +74,16 @@ void ble_init(void)
     if (state == 0)
     {
         Serial.println("Wheel Position: Left");
-        pWheelService = pServer->createService("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc0");
-        pWheelMeasurement = pWheelService->createCharacteristic("9b4833f9-a8e0-46e1-bdc6-2d2f69f12d00", BLECharacteristic::PROPERTY_NOTIFY);
-        pAdvertising->addServiceUUID("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc0");
+        pWheelService = pServer->createService("02345678-1234-5678-1234-56789abcdef0");
+        pWheelMeasurement = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ);
+        pAdvertising->addServiceUUID("02345678-1234-5678-1234-56789abcdef0");
     }
     else
     {
         Serial.println("Wheel Position: Right");
-        pWheelService = pServer->createService("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc1");
-        pWheelMeasurement = pWheelService->createCharacteristic("9b4833f9-a8e0-46e1-bdc6-2d2f69f12d11", BLECharacteristic::PROPERTY_NOTIFY);
-        pAdvertising->addServiceUUID("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc1");
+        pWheelService = pServer->createService("12345678-1234-5678-1234-56789abcdef0");
+        pWheelMeasurement = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY);
+        pAdvertising->addServiceUUID("12345678-1234-5678-1234-56789abcdef0");
     }
 
     pWheelService->start();

@@ -27,6 +27,19 @@ static void _hall_clbk(void)
     }
 }
 
+static void _on_ble_connection_changed(bool connected)
+{
+    if (connected)
+    {
+        Serial.println("BLE client connected.");
+        ble_update_send_csc_measurement(&csc_measurement);
+    }
+    else
+    {
+        Serial.println("BLE client disconnected.");
+    }
+}
+
 static void _measurements_update()
 {
     if (data_update)
@@ -49,10 +62,11 @@ void setup()
     board_init();
     ble_init();
     register_hall_callback(_hall_clbk);
+    ble_register_connection_callback(_on_ble_connection_changed);
 }
 
 void loop()
 {
     _measurements_update();
-    delay(10);
+    delay(1);
 }
