@@ -2,14 +2,57 @@
 #include "board.h"
 #include "ble.h"
 
+unsigned long lastUpdate = 0;
+unsigned long last_wheel_update = 0;
+unsigned long previouswheelUpdate = 0;
+volatile bool data_update = false;
+uint16_t wheel_rev_period;
+const int debounce_period_ms = 150;
+
+static csc_measurement_t csc_measurement;
+
+static void _hall_clbk(void)
+{
+    static volatile int last_interrupt_ms = 0;
+
+    if (millis() - last_interrupt_ms > debounce_period_ms)
+    {
+        data_update = true;
+        last_interrupt_ms = millis();
+
+        wheel_rev_period = millis() - last_wheel_update;
+        last_wheel_update = millis();
+        csc_measurement.cum_wheel_rev++;
+        csc_measurement.last_wheel_event += wheel_rev_period;
+    }
+}
+
+static void _measurements_update()
+{
+    if (data_update)
+    {
+        data_update = false;
+        Serial.print("Wheel_Rev_Period : ");
+        Serial.println(wheel_rev_period);
+        Serial.print("LastwheelUpdte : ");
+        Serial.println(last_wheel_update);
+        Serial.print("Cum_Wheel_Rev : ");
+        Serial.println(csc_measurement.cum_wheel_rev);
+        ble_update_send_csc_measurement(&csc_measurement);
+    }
+}
+
 void setup()
 {
+    Serial.begin(115200);
+    Serial.println("Ryadh Project - BLE Wheel Sensor");
     board_init();
     ble_init();
+    register_hall_callback(_hall_clbk);
 }
 
 void loop()
 {
-    // put your main code here, to run repeatedly:
-    delay(2000);
+    _measurements_update();
+    delay(10);
 }

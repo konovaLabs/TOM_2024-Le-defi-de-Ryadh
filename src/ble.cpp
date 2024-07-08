@@ -1,28 +1,31 @@
 #include <Arduino.h>
+#include "ble.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
+BLEServer *pServer = NULL;
+BLEService *pCSCService = NULL;
+BLECharacteristic *pCSCMeasurement = NULL;
+BLECharacteristic *pCSCFeature = NULL;
+BLECharacteristic *pSensorLocation = NULL;
+BLECharacteristic *pSCControlPoint = NULL;
+
 void ble_init(void)
 {
     BLEDevice::init("La Roue");
-    BLEServer *pServer = BLEDevice::createServer();
+    pServer = BLEDevice::createServer();
 
     /* Create Cycling Speed and Cadence service */
-    BLEService *pCSCService = pServer->createService("1816");
+    pCSCService = pServer->createService("1816");
     /* Create CSC Measurement characteristic */
-    BLECharacteristic *pCSCMeasurement =
-        pCSCService->createCharacteristic("2A5B", BLECharacteristic::PROPERTY_NOTIFY);
+    pCSCMeasurement = pCSCService->createCharacteristic("2A5B", BLECharacteristic::PROPERTY_NOTIFY);
     /* Create CSC Feature characteristic */
-    BLECharacteristic *pCSCFeature =
-        pCSCService->createCharacteristic("2A5C", BLECharacteristic::PROPERTY_INDICATE);
+    pCSCFeature = pCSCService->createCharacteristic("2A5C", BLECharacteristic::PROPERTY_INDICATE);
     /* Create Sensor Location characteristic */
-    BLECharacteristic *pSensorLocation =
-        pCSCService->createCharacteristic("2A5D", BLECharacteristic::PROPERTY_READ);
+    pSensorLocation = pCSCService->createCharacteristic("2A5D", BLECharacteristic::PROPERTY_READ);
     /* Create Sensor Location characteristic */
-    BLECharacteristic *pSCControlPoint =
-        pCSCService->createCharacteristic("2A55", BLECharacteristic::PROPERTY_INDICATE);
-
+    pSCControlPoint = pCSCService->createCharacteristic("2A55", BLECharacteristic::PROPERTY_INDICATE);
     pCSCService->start();
 
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
@@ -31,4 +34,25 @@ void ble_init(void)
     pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
     pAdvertising->setMinPreferred(0x12);
     BLEDevice::startAdvertising();
+}
+
+void ble_update_send_csc_measurement(csc_measurement_t *csc_measurement)
+{
+    uint8_t data_buf[7];
+
+    // The Cycle Measurement Characteristic data is defined here:
+    // https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.csc_measurement.xml
+    // Frist byte is flags. Wheel Revolution Data Present (0 = false, 1 = true) = 1, Crank Revolution Data Present (0 = false, 1 = true), so the flags are 0x03 (binary 11 converted to HEX).
+    // buf[0]=0x03;
+
+    data_buf[0] = 0x01; // Wheel Revolution Data Present (0 = false, 1 = true) = 1
+
+    // Setting values for cycling measures (from the Characteristic File)
+    // Cumulative Wheel Revolutions (unitless)
+    // Last Wheel Event Time (Unit has a resolution of 1/1024s)
+    memcpy(&data_buf[1], &csc_measurement->cum_wheel_rev, 4);
+    memcpy(&data_buf[5], &csc_measurement->last_wheel_event, 2);
+
+    pCSCMeasurement->setValue(data_buf, 7);
+    pCSCMeasurement->notify();
 }
