@@ -13,6 +13,9 @@ void board_init(void)
 {
     pinMode(HALL_SENSOR_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(HALL_SENSOR_PIN), _isr_hall, FALLING);
+    pinMode(VIRTUAL_VCC_PIN, OUTPUT);
+    digitalWrite(VIRTUAL_VCC_PIN, HIGH);
+    pinMode(GPIO_WHEEL_POSITION, INPUT_PULLDOWN);
 }
 
 void register_hall_callback(void (*callback)(void))

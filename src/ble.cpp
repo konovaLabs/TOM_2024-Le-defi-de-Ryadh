@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "board.h"
 #include "ble.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
@@ -6,6 +7,8 @@
 
 BLEServer *pServer = NULL;
 BLEService *pCSCService = NULL;
+BLEService *pWheelService = NULL;
+BLECharacteristic *pWheelMeasurement = NULL;
 BLECharacteristic *pCSCMeasurement = NULL;
 BLECharacteristic *pCSCFeature = NULL;
 BLECharacteristic *pSensorLocation = NULL;
@@ -33,6 +36,26 @@ void ble_init(void)
     pAdvertising->setScanResponse(true);
     pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
     pAdvertising->setMinPreferred(0x12);
+
+    /* Create Wheel Service */
+    int state = digitalRead(GPIO_WHEEL_POSITION);
+    if (state == 0)
+    {
+        Serial.println("Wheel Position: Left");
+        pWheelService = pServer->createService("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc0");
+        pWheelMeasurement = pWheelService->createCharacteristic("9b4833f9-a8e0-46e1-bdc6-2d2f69f12d00", BLECharacteristic::PROPERTY_NOTIFY);
+        pAdvertising->addServiceUUID("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc0");
+    }
+    else
+    {
+        Serial.println("Wheel Position: Right");
+        pWheelService = pServer->createService("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc1");
+        pWheelMeasurement = pWheelService->createCharacteristic("9b4833f9-a8e0-46e1-bdc6-2d2f69f12d11", BLECharacteristic::PROPERTY_NOTIFY);
+        pAdvertising->addServiceUUID("9b4833f9-a8e0-46e1-bdc6-2d2f69f12dc1");
+    }
+
+    pWheelService->start();
+
     BLEDevice::startAdvertising();
 }
 
@@ -55,4 +78,7 @@ void ble_update_send_csc_measurement(csc_measurement_t *csc_measurement)
 
     pCSCMeasurement->setValue(data_buf, 7);
     pCSCMeasurement->notify();
+
+    pWheelMeasurement->setValue(data_buf, 7);
+    pWheelMeasurement->notify();
 }
