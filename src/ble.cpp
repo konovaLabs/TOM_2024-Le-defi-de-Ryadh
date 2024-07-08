@@ -13,6 +13,7 @@ BLECharacteristic *pCSCMeasurement = NULL;
 BLECharacteristic *pCSCFeature = NULL;
 BLECharacteristic *pSensorLocation = NULL;
 BLECharacteristic *pSCControlPoint = NULL;
+BLECharacteristic *pledRGBValue = NULL;
 bool deviceConnected = false;
 ConnectionCallback connectionCallback = nullptr;
 
@@ -37,6 +38,19 @@ class MyServerCallbacks : public BLEServerCallbacks
             connectionCallback(deviceConnected);
         }
         BLEDevice::startAdvertising();
+    }
+};
+
+// Callbacks pour la caractéristique LED RGB
+class LedRGBCallbacks : public BLECharacteristicCallbacks
+{
+    void onWrite(BLECharacteristic *pCharacteristic)
+    {
+        uint8_t *data = pCharacteristic->getData();
+        if (pCharacteristic->getLength() == 3)
+        {
+            leds_set_color(data[0], data[1], data[2]);
+        }
     }
 };
 
@@ -76,6 +90,7 @@ void ble_init(void)
         Serial.println("Wheel Position: Left");
         pWheelService = pServer->createService("02345678-1234-5678-1234-56789abcdef0");
         pWheelMeasurement = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ);
+        pledRGBValue = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE);
         pAdvertising->addServiceUUID("02345678-1234-5678-1234-56789abcdef0");
     }
     else
@@ -83,8 +98,11 @@ void ble_init(void)
         Serial.println("Wheel Position: Right");
         pWheelService = pServer->createService("12345678-1234-5678-1234-56789abcdef0");
         pWheelMeasurement = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY);
+        pledRGBValue = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE);
         pAdvertising->addServiceUUID("12345678-1234-5678-1234-56789abcdef0");
     }
+
+    pledRGBValue->setCallbacks(new LedRGBCallbacks());
 
     pWheelService->start();
 
