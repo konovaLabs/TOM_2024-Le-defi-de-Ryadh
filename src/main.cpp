@@ -7,7 +7,7 @@ unsigned long last_wheel_update = 0;
 unsigned long previouswheelUpdate = 0;
 volatile bool data_update = false;
 uint16_t wheel_rev_period;
-const int debounce_period_ms = 150;
+const int debounce_period_ms = 10;
 
 static csc_measurement_t csc_measurement;
 
@@ -45,12 +45,14 @@ static void _measurements_update()
     if (data_update)
     {
         data_update = false;
+#if 0
         Serial.print("Wheel_Rev_Period : ");
         Serial.println(wheel_rev_period);
         Serial.print("LastwheelUpdte : ");
         Serial.println(last_wheel_update);
         Serial.print("Cum_Wheel_Rev : ");
         Serial.println(csc_measurement.cum_wheel_rev);
+#endif
         ble_update_send_csc_measurement(&csc_measurement);
     }
 }
@@ -68,5 +70,6 @@ void setup()
 void loop()
 {
     _measurements_update();
+    //_hall_clbk();
     delay(1);
 }

@@ -90,7 +90,7 @@ void ble_init(void)
         Serial.println("Wheel Position: Left");
         pWheelService = pServer->createService("02345678-1234-5678-1234-56789abcdef0");
         pWheelMeasurement = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ);
-        pledRGBValue = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE);
+        pledRGBValue = pWheelService->createCharacteristic("02345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE_NR);
         pAdvertising->addServiceUUID("02345678-1234-5678-1234-56789abcdef0");
     }
     else
@@ -98,7 +98,7 @@ void ble_init(void)
         Serial.println("Wheel Position: Right");
         pWheelService = pServer->createService("12345678-1234-5678-1234-56789abcdef0");
         pWheelMeasurement = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef1", BLECharacteristic::PROPERTY_NOTIFY);
-        pledRGBValue = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE);
+        pledRGBValue = pWheelService->createCharacteristic("12345678-1234-5678-1234-56789abcdef2", BLECharacteristic::PROPERTY_WRITE_NR);
         pAdvertising->addServiceUUID("12345678-1234-5678-1234-56789abcdef0");
     }
 
@@ -130,5 +130,6 @@ void ble_update_send_csc_measurement(csc_measurement_t *csc_measurement)
     pCSCMeasurement->notify();
 
     pWheelMeasurement->setValue(data_buf, 7);
+    pWheelMeasurement->notify();
     pWheelMeasurement->notify();
 }
